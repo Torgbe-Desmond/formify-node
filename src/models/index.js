@@ -50,6 +50,24 @@ const folderSchema = new mongoose.Schema(
 );
 
 // ─── SchemaTemplate ──────────────────────────────────────────────────────────
+//
+// New multi-schema shape:
+//   entrySchema  — name of the root schema used to render files in this folder
+//   schemas      — map of named schema definitions:
+//                  { [SchemaName]: { schemaYaml, templateHtml, templateCss } }
+//
+// Migration: old documents with flat schemaYaml/templateHtml/templateCss fields
+// are accepted on read and normalised by the controller into the new shape.
+//
+const namedSchemaSchema = new mongoose.Schema(
+  {
+    schemaYaml:   { type: String, default: '' },
+    templateHtml: { type: String, default: '' },
+    templateCss:  { type: String, default: '' },
+  },
+  { _id: false }
+);
+
 const schemaTemplateSchema = new mongoose.Schema(
   {
     folderId: {
@@ -59,9 +77,18 @@ const schemaTemplateSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
-    schemaYaml: { type: String, default: '' },
-    templateHtml: { type: String, default: '' },
-    templateCss: { type: String, default: '' },
+    // New shape
+    entrySchema: { type: String, default: 'Main' },
+    schemas: {
+      type: Map,
+      of: namedSchemaSchema,
+      default: () => new Map([[ 'Main', { schemaYaml: '', templateHtml: '', templateCss: '' } ]]),
+    },
+    // Legacy flat fields — kept so old documents are not broken on read.
+    // The controller normalises these into the schemas map when encountered.
+    schemaYaml:   { type: String },
+    templateHtml: { type: String },
+    templateCss:  { type: String },
   },
   baseOptions
 );

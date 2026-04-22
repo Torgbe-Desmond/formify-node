@@ -180,7 +180,7 @@ async function update(req, res, next) {
     if (content !== undefined) {
       await fileStorage.updateContent(file.storageKey, content);
       file.sizeBytes = Buffer.byteLength(content, 'utf8');
-    }
+    } 
 
     if (metadata !== undefined) {
       file.metadata = normalizeMetadata(metadata);

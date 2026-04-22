@@ -4,7 +4,12 @@ const { NotFoundError, UnauthorizedError } = require('../middleware/errorHandler
 const { validate } = require('../middleware/validate');
 
 // ─── Validators ──────────────────────────────────────────────────────────────
+
 const schemaRules = [
+  // New multi-schema shape
+  body('schemas').optional().isObject().withMessage('schemas must be an object'),
+  body('entrySchema').optional().isString(),
+  // Legacy flat fields — still accepted for backwards compat
   body('schemaYaml').optional().isString(),
   body('templateHtml').optional().isString(),
   body('templateCss').optional().isString(),
@@ -17,15 +22,73 @@ const folderIdParam = [
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function toDto(schema) {
+
+/**
+ * Normalise a SchemaTemplate document into the multi-schema DTO shape.
+ * Handles both new documents (schemas Map) and legacy flat documents.
+ */
+function toDto(doc) {
+  let schemas;
+  let entrySchema;
+
+  // New shape — schemas is a Mongoose Map
+  if (doc.schemas && doc.schemas.size > 0) {
+    schemas = Object.fromEntries(doc.schemas);
+    entrySchema = doc.entrySchema || 'Main';
+  } else {
+    // Legacy flat shape — wrap into Main
+    schemas = {
+      Main: {
+        schemaYaml:   doc.schemaYaml   || '',
+        templateHtml: doc.templateHtml || '',
+        templateCss:  doc.templateCss  || '',
+      },
+    };
+    entrySchema = 'Main';
+  }
+
   return {
-    id: schema._id,
-    folderId: schema.folderId,
-    schemaYaml: schema.schemaYaml,
-    templateHtml: schema.templateHtml,
-    templateCss: schema.templateCss,
-    createdAt: schema.createdAt,
-    updatedAt: schema.updatedAt,
+    id:          doc._id,
+    folderId:    doc.folderId,
+    entrySchema,
+    schemas,
+    createdAt:   doc.createdAt,
+    updatedAt:   doc.updatedAt,
+  };
+}
+
+/**
+ * Normalise an incoming request body into the shape we store.
+ * Accepts:
+ *   - New shape:  { schemas: { [name]: { schemaYaml, templateHtml, templateCss } }, entrySchema }
+ *   - Legacy shape: { schemaYaml, templateHtml, templateCss }
+ */
+function normaliseBody(body) {
+  if (body.schemas && typeof body.schemas === 'object') {
+    // New shape — convert plain object to Map entries
+    return {
+      entrySchema: body.entrySchema || 'Main',
+      schemas:     new Map(Object.entries(body.schemas)),
+      // Clear legacy fields
+      schemaYaml:   undefined,
+      templateHtml: undefined,
+      templateCss:  undefined,
+    };
+  }
+
+  // Legacy flat shape — wrap into Main entry
+  return {
+    entrySchema: 'Main',
+    schemas: new Map([
+      ['Main', {
+        schemaYaml:   body.schemaYaml   || '',
+        templateHtml: body.templateHtml || '',
+        templateCss:  body.templateCss  || '',
+      }],
+    ]),
+    schemaYaml:   undefined,
+    templateHtml: undefined,
+    templateCss:  undefined,
   };
 }
 
@@ -38,6 +101,7 @@ async function assertFolderOwnership(folderId, userId) {
 }
 
 // ─── Handlers ────────────────────────────────────────────────────────────────
+
 async function get(req, res, next) {
   try {
     await assertFolderOwnership(req.params.folderId, req.userId);
@@ -53,11 +117,11 @@ async function upsert(req, res, next) {
   try {
     await assertFolderOwnership(req.params.folderId, req.userId);
 
-    const { schemaYaml = '', templateHtml = '', templateCss = '' } = req.body;
+    const update = normaliseBody(req.body);
 
     const schema = await SchemaTemplate.findOneAndUpdate(
       { folderId: req.params.folderId },
-      { $set: { schemaYaml, templateHtml, templateCss } },
+      { $set: update },
       { new: true, upsert: true, runValidators: true }
     );
 

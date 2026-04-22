@@ -17,13 +17,7 @@ function createApp() {
 
   app.use(
     cors({
-      origin: (origin, cb) => {
-        // Allow requests with no origin (mobile apps, curl, etc.) in dev
-        if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
-          return cb(null, true);
-        }
-        cb(new Error(`CORS: origin ${origin} not allowed`));
-      },
+      origin:["http://localhost:3000"],
       credentials: true,
     })
   );
