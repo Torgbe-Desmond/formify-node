@@ -8,6 +8,7 @@ const folders = require('../controllers/folders.controller');
 const schema = require('../controllers/schema.controller');
 const files = require('../controllers/files.controller');
 const { breadcrumb, breadcrumbRules } = require('../controllers/breadcrumb.controller');
+const { exportPdf, exportPdfRules } = require('../controllers/export.controller');
 
 const router = express.Router();
 
@@ -20,6 +21,9 @@ router.post('/auth/login', auth.loginRules, auth.login);
 
 // ─── Protected routes ────────────────────────────────────────────────────────
 router.use(authenticate);
+
+// Export
+router.post('/export/pdf/:id', exportPdfRules, exportPdf);
 
 // Breadcrumb
 router.get('/breadcrumb/:type/:id', breadcrumbRules, breadcrumb);

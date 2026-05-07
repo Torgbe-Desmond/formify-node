@@ -8,6 +8,21 @@ RUN npm ci --omit=dev
 FROM node:20-alpine AS runtime
 WORKDIR /app
 
+# Chromium dependencies required by Puppeteer on Alpine
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    font-noto \
+    && rm -rf /var/cache/apk/*
+
+# Tell Puppeteer to use the system Chromium instead of downloading its own
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 # Non-root user for security
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 

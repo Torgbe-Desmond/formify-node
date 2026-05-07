@@ -17,7 +17,7 @@ function createApp() {
 
   app.use(
     cors({
-      origin:["https://formify-it.vercel.app"],
+      origin:['http://localhost:3000','https://formify-it.vercel.app'],
       credentials: true,
     })
   );
