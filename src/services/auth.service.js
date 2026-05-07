@@ -4,8 +4,8 @@ const { v4: uuidv4 } = require('uuid');
 
 // ─── JWT Service ─────────────────────────────────────────────────────────────
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me-32-chars-minimum-secret';
-const JWT_ISSUER = process.env.JWT_ISSUER || 'FastTransfers';
-const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'FastTransfers';
+const JWT_ISSUER = process.env.JWT_ISSUER || 'Portfolio';
+const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'Portfolio';
 const JWT_EXPIRY_MINUTES = parseInt(process.env.JWT_EXPIRY_MINUTES || '60', 10);
 
 /**
