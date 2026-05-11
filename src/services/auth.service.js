@@ -21,7 +21,7 @@ function generateToken(user) {
   return jwt.sign(payload, JWT_SECRET, {
     issuer: JWT_ISSUER,
     audience: JWT_AUDIENCE,
-    expiresIn: JWT_EXPIRY_MINUTES * 60,
+    expiresIn: "8h",
   });
 }
 
